@@ -25,16 +25,33 @@ QCefConfigPrivate::CopyToCefSettings(const QCefConfig* config, CefSettings* sett
     QCefConfigPrivate cfg;
 
     // copy the mandatory fields
-    settings->no_sandbox = config->d_ptr->sandboxDisabled_.toInt();
-    settings->windowless_rendering_enabled = config->d_ptr->windowlessRenderingEnabled_.toInt();
-    settings->command_line_args_disabled = config->d_ptr->commandLinePassthroughDisabled_.toInt();
-    settings->multi_threaded_message_loop = config->d_ptr->standaloneMessgeLoopEnabled_.toInt();
+    settings->no_sandbox = cfg.sandboxDisabled_.toInt();
+    settings->windowless_rendering_enabled = cfg.windowlessRenderingEnabled_.toInt();
+    settings->command_line_args_disabled = cfg.commandLinePassthroughDisabled_.toInt();
+    settings->multi_threaded_message_loop = cfg.standaloneMessgeLoopEnabled_.toInt();
 
 #if defined(Q_OS_WINDOWS) || defined(Q_OS_LINUX)
     CefString(&settings->browser_subprocess_path) = cfg.browserSubProcessPath_;
     CefString(&settings->resources_dir_path) = cfg.resourceDirectoryPath_;
     CefString(&settings->locales_dir_path) = cfg.localesDirectoryPath_;
 #endif
+
+    // copy the optional fields
+    if (cfg.persistSessionCookies_.canConvert<int>())
+      settings->persist_session_cookies = cfg.persistSessionCookies_.toInt();
+
+#if CEF_VERSION_MAJOR < 128
+    if (cfg.persistUserPreferences_.canConvert<int>())
+      settings->persist_user_preferences = cfg.persistUserPreferences_.toInt();
+#endif
+
+    if (cfg.backgroundColor_.canConvert<QColor>())
+      settings->background_color = cfg.backgroundColor_.value<QColor>().rgba();
+
+    if (cfg.remoteDebuggingport_.canConvert<int>())
+      settings->remote_debugging_port = cfg.remoteDebuggingport_.toInt();
+
+    settings->log_severity = (cef_log_severity_t)cfg.logLevel_;
   } else {
     settings->no_sandbox = config->d_ptr->sandboxDisabled_.toInt();
     settings->windowless_rendering_enabled = config->d_ptr->windowlessRenderingEnabled_.toInt();

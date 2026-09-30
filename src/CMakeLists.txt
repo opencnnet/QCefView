@@ -63,10 +63,23 @@ if(OS_WINDOWS)
     QCEFVIEW_LIB
   )
 
+  # Delay-load every dependency which is not guaranteed to exist on the oldest
+  # supported Windows versions. Windows 7/8/8.1 do not ship d3d11.dll and
+  # d3dcompiler_47.dll unless the Platform Update is installed, and dcomp.dll
+  # only exists since Windows 8. Delay-loading keeps QCefView.dll loadable
+  # there, so createHardwareRenderer() can report the lack of support instead of
+  # failing while the module itself is being loaded.
+  set(QCefView_DELAYLOAD_OPTIONS
+    "/DELAYLOAD:libcef.dll"
+    "/DELAYLOAD:d3d11.dll"
+    "/DELAYLOAD:d3dcompiler_47.dll"
+    "/DELAYLOAD:dcomp.dll"
+  )
+
   if(BUILD_STATIC)
     target_link_options(QCefView
       PUBLIC
-      "/DELAYLOAD:libcef.dll"
+      ${QCefView_DELAYLOAD_OPTIONS}
     )
 
     target_link_libraries(QCefView
@@ -79,7 +92,7 @@ if(OS_WINDOWS)
   else()
     target_link_options(QCefView
       PRIVATE
-      "/DELAYLOAD:libcef.dll"
+      ${QCefView_DELAYLOAD_OPTIONS}
     )
 
     target_link_libraries(QCefView

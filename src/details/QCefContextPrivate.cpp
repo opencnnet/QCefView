@@ -1,6 +1,7 @@
-﻿#include "QCefContextPrivate.h"
+#include "QCefContextPrivate.h"
 
 #pragma region qt_headers
+#include <QDebug>
 #include <QThread>
 #pragma endregion
 
@@ -40,12 +41,23 @@ QCefContextPrivate::getCefApp()
 }
 
 bool
+QCefContextPrivate::isCefAvailable() const
+{
+  return cefAvailable_;
+}
+
+bool
 QCefContextPrivate::initialize(const QCefConfig* config)
 {
   config_ = config;
 
   // initialize CEF
-  if (!initializeCef(config)) {
+  cefAvailable_ = initializeCef(config);
+  if (!cefAvailable_) {
+    // The CEF runtime is not usable on this system (for example Windows
+    // 7/8/8.1). This is not fatal, the QCefView instances will display an
+    // unsupported placeholder instead of web content.
+    qWarning() << "Failed to initialize CEF, QCefView will run in unsupported mode";
     return false;
   }
 
@@ -66,6 +78,12 @@ QCefContextPrivate::cefConfig() const
 void
 QCefContextPrivate::addLocalFolderResource(const QString& path, const QString& url, int priority /*= 0*/)
 {
+  if (!isCefAvailable()) {
+    // no application object to register the resource on
+    qWarning() << "CEF is not available, skip adding the local folder resource";
+    return;
+  }
+
   pApp_->AddLocalFolderResource(path.toStdString(), url.toStdString(), priority);
 }
 
@@ -75,6 +93,12 @@ QCefContextPrivate::addArchiveResource(const QString& path,
                                        const QString& password /*= ""*/,
                                        int priority /*= 0*/)
 {
+  if (!isCefAvailable()) {
+    // no application object to register the resource on
+    qWarning() << "CEF is not available, skip adding the archive resource";
+    return;
+  }
+
   pApp_->AddArchiveResource(path.toStdString(), url.toStdString(), password.toStdString(), priority);
 }
 
@@ -84,6 +108,11 @@ QCefContextPrivate::addGlobalCookie(const std::string& name,
                                     const std::string& domain,
                                     const std::string& url)
 {
+  if (!isCefAvailable()) {
+    qWarning() << "CEF is not available, skip adding the global cookie";
+    return false;
+  }
+
   CefCookie cookie;
   CefString(&cookie.name).FromString(name);
   CefString(&cookie.value).FromString(value);
@@ -94,6 +123,11 @@ QCefContextPrivate::addGlobalCookie(const std::string& name,
 bool
 QCefContextPrivate::deleteAllCookies()
 {
+  if (!isCefAvailable()) {
+    qWarning() << "CEF is not available, skip deleting all cookies";
+    return false;
+  }
+
   return CefCookieManager::GetGlobalManager(nullptr)->DeleteCookies(CefString(), CefString(), nullptr);
 }
 
@@ -103,6 +137,11 @@ QCefContextPrivate::addCrossOriginWhitelistEntry(const QString& sourceOrigin,
                                                  const QString& targetDomain,
                                                  bool allowTargetSubdomains)
 {
+  if (!isCefAvailable()) {
+    qWarning() << "CEF is not available, skip adding the cross origin whitelist entry";
+    return false;
+  }
+
   CefString source(sourceOrigin.toStdString());
   CefString schema(targetSchema.toStdString());
   CefString domain(targetDomain.toStdString());
@@ -115,6 +154,11 @@ QCefContextPrivate::removeCrossOriginWhitelistEntry(const QString& sourceOrigin,
                                                     const QString& targetDomain,
                                                     bool allowTargetSubdomains)
 {
+  if (!isCefAvailable()) {
+    qWarning() << "CEF is not available, skip removing the cross origin whitelist entry";
+    return false;
+  }
+
   CefString source(sourceOrigin.toStdString());
   CefString schema(targetSchema.toStdString());
   CefString domain(targetDomain.toStdString());
@@ -124,6 +168,11 @@ QCefContextPrivate::removeCrossOriginWhitelistEntry(const QString& sourceOrigin,
 bool
 QCefContextPrivate::clearCrossOriginWhitelistEntry()
 {
+  if (!isCefAvailable()) {
+    qWarning() << "CEF is not available, skip clearing the cross origin whitelist";
+    return false;
+  }
+
   return CefClearCrossOriginWhitelist();
 }
 
@@ -181,6 +230,10 @@ QCefContextPrivate::onAboutToQuit()
 void
 QCefContextPrivate::performCefLoopWork()
 {
+  if (!cefAvailable_) {
+    return;
+  }
+
   // process cef work
   CefDoMessageLoopWork();
 }

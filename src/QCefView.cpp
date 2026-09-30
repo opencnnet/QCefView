@@ -1,4 +1,4 @@
-﻿#include <QCefView.h>
+#include <QCefView.h>
 
 #pragma region qt_headers
 #include <QPainter>
@@ -294,6 +294,20 @@ QCefView::zoomLevel()
   Q_D(QCefView);
 
   return d->zoomLevel();
+}
+
+void
+QCefView::fetchDisplayText(const QCefFrameId& frameId)
+{
+  Q_D(QCefView);
+  d->fetchDisplayText(frameId);
+}
+
+void
+QCefView::fetchCookies(const QCefFrameId& frameId)
+{
+  Q_D(QCefView);
+  d->fetchCookies(frameId);
 }
 
 QCefView*

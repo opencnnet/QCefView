@@ -12,6 +12,33 @@ endif()
 # create src dir suffix with short tag value (on windows cl.exe cannot recognize path name longer than 256 chars)
 string(SUBSTRING "${CEFVIEW_CORE_VERSION}" 0 7 CEFVIEW_CORE_SRC_DIR_SUFFIX)
 
+# offline mode
+# ###############################################################################################
+# Point QCEFVIEW_OFFLINE_DEPS_DIR to the folder which holds the dependencies fetched/extracted
+# before (typically the 'deps' folder besides this project). The dependencies stored in that
+# folder are reused as-is and nothing will be downloaded from the network, which is handy when
+# the build folder is removed and re-generated frequently.
+#
+# The folder is expected to contain the fetched CefViewCore source tree, with the CEF binary SDK
+# already extracted into its 'dep' folder, e.g.
+#   <QCEFVIEW_OFFLINE_DEPS_DIR>/cefviewcore-src-<CEFVIEW_CORE_SRC_DIR_SUFFIX>/
+set(QCEFVIEW_OFFLINE_DEPS_DIR "" CACHE PATH "Folder which holds the dependencies fetched previously (offline build)")
+
+if(QCEFVIEW_OFFLINE_DEPS_DIR)
+  set(_QCefView_offline_core_src
+    "${QCEFVIEW_OFFLINE_DEPS_DIR}/cefviewcore-src-${CEFVIEW_CORE_SRC_DIR_SUFFIX}")
+
+  if(EXISTS "${_QCefView_offline_core_src}/CMakeLists.txt")
+    # tell FetchContent to use the local copy, no download/update step will be performed
+    set(FETCHCONTENT_SOURCE_DIR_CEFVIEWCORE "${_QCefView_offline_core_src}")
+    message(STATUS "Offline deps: reuse CefViewCore from ${_QCefView_offline_core_src}")
+  else()
+    message(WARNING
+      "QCEFVIEW_OFFLINE_DEPS_DIR is set to '${QCEFVIEW_OFFLINE_DEPS_DIR}', but "
+      "'${_QCefView_offline_core_src}' does not exist, fallback to downloading CefViewCore")
+  endif()
+endif()
+
 # fetch CefViewCore project
 FetchContent_Declare(
     CefViewCore
@@ -77,7 +104,8 @@ FetchContent_Declare(
 # set(CEF_SDK_VERSION "139.0.40+g465474a+chromium-139.0.7258.139")
 # set(CEF_SDK_VERSION "140.1.20+g49f5d09+chromium-140.0.7339.214")
 # set(CEF_SDK_VERSION "141.0.11+g7e73ac4+chromium-141.0.7390.123")
-set(CEF_SDK_VERSION "142.0.15+g6dfdb28+chromium-142.0.7444.176")
+# set(CEF_SDK_VERSION "142.0.15+g6dfdb28+chromium-142.0.7444.176")
+set(CEF_SDK_VERSION "144.0.35+g12f1636+chromium-144.0.7559.262")
 
 # populate CefViewCore project
 FetchContent_MakeAvailable(CefViewCore)

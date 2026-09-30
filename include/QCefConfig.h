@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: QCefConfig.h
  * Project: QCefView
  * Created: 21nd January 2021
@@ -355,6 +355,24 @@ public:
   /// Gets the remote debugging port
   /// </summary>
   const QVariant remoteDebuggingPort() const;
+
+  /// <summary>
+  /// Sets the message which the <see cref="QCefView"/> instances display when the CEF runtime
+  /// is not available on the current system
+  /// </summary>
+  /// <param name="message">The placeholder message</param>
+  /// <remarks>
+  /// This is used on systems which can not run the bundled CEF runtime, for
+  /// example Windows 7, Windows 8 and Windows 8.1. Setting an empty message
+  /// makes the placeholder only paint the widget background.
+  /// </remarks>
+  void setUnsupportedMessage(const QString& message);
+
+  /// <summary>
+  /// Gets the message displayed when the CEF runtime is not available
+  /// </summary>
+  /// <returns>The placeholder message</returns>
+  const QString unsupportedMessage() const;
 };
 
 Q_DECLARE_METATYPE(QCefConfig);

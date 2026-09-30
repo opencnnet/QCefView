@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #pragma region stl_headers
 #include <atomic>
@@ -70,6 +70,14 @@ private:
   /// </summary>
   CCefAppDelegate::RefPtr pAppDelegate_;
 
+  /// <summary>
+  /// Whether the CEF runtime has been initialized successfully. It stays false
+  /// when the CEF binaries are not usable on the current system (for example
+  /// Windows 7/8/8.1), in which case the QCefView instances display an
+  /// unsupported placeholder instead of web content.
+  /// </summary>
+  bool cefAvailable_ = false;
+
 public:
   /// <summary>
   ///
@@ -86,6 +94,12 @@ public:
   /// </summary>
   /// <returns></returns>
   CefRefPtr<CefViewBrowserApp> getCefApp();
+
+  /// <summary>
+  /// Indicates whether the CEF runtime is available on the current system
+  /// </summary>
+  /// <returns>True if CEF is available; otherwise false</returns>
+  bool isCefAvailable() const;
 
   /// <summary>
   ///

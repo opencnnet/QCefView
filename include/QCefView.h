@@ -296,6 +296,20 @@ public:
   /// <returns>the zoom level value.</returns>
   double zoomLevel();
 
+  /// <summary>
+  /// Fetch the display text (innerText) of the specified frame.
+  /// Result is delivered asynchronously via <see cref="displayTextReady"/> signal.
+  /// </summary>
+  /// <param name="frameId">The frame id from <see cref="loadEnd"/> signal</param>
+  void fetchDisplayText(const QCefFrameId& frameId);
+
+  /// <summary>
+  /// Fetch cookies for the URL of the specified frame.
+  /// Result is delivered asynchronously via <see cref="cookiesReady"/> signal.
+  /// </summary>
+  /// <param name="frameId">The frame id from <see cref="loadEnd"/> signal</param>
+  void fetchCookies(const QCefFrameId& frameId);
+
 signals:
   /// <summary>
   /// Gets called on loading state changed
@@ -323,6 +337,35 @@ signals:
   /// <param name="isMainFrame">Indicates the whether this is the main frame</param>
   /// <param name="httpStatusCode">The HTTP status code</param>
   void loadEnd(const QCefBrowserId& browserId, const QCefFrameId& frameId, bool isMainFrame, int httpStatusCode);
+
+  /// <summary>
+  /// Gets called when the page display text (innerText) is ready.
+  /// Only emitted after calling <see cref="fetchDisplayText"/>.
+  /// </summary>
+  /// <param name="browserId">Indicates the browser id</param>
+  /// <param name="frameId">Indicates the frame id</param>
+  /// <param name="isMainFrame">Indicates whether this is the main frame</param>
+  /// <param name="text">The visible text content of the frame</param>
+  void displayTextReady(const QCefBrowserId& browserId,
+                        const QCefFrameId& frameId,
+                        bool isMainFrame,
+                        const QString& text);
+
+  /// <summary>
+  /// Gets called when cookies are ready.
+  /// Only emitted after calling <see cref="fetchCookies"/>.
+  /// </summary>
+  /// <param name="browserId">Indicates the browser id</param>
+  /// <param name="frameId">Indicates the frame id</param>
+  /// <param name="isMainFrame">Indicates whether this is the main frame</param>
+  /// <param name="cookies">
+  /// List of QVariantMap, each map contains keys:
+  /// name, value, domain, path, secure, httponly
+  /// </param>
+  void cookiesReady(const QCefBrowserId& browserId,
+                    const QCefFrameId& frameId,
+                    bool isMainFrame,
+                    const QVariantList& cookies);
 
   /// <summary>
   /// Gets called on loading failed due to error

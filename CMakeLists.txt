@@ -135,6 +135,13 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   add_compile_options(
     /W3
     /WX
+    # The CEF SDK sources are UTF-8 encoded without a BOM and contain non-ASCII characters
+    # (for example an em dash in a comment of cef_browser.h / internal/cef_types.h). On a machine
+    # whose ANSI code page is not UTF-8 (e.g. 936) cl.exe then reports C4819 for every translation
+    # unit that includes such a header; combined with the /WX above that becomes
+    # "error C2220: warnings treated as errors" and the build fails.
+    # Tell MSVC explicitly that the sources are UTF-8.
+    /utf-8
     /M$<IF:$<BOOL:${STATIC_CRT}>,T,D>$<$<CONFIG:Debug>:d>
   )
   add_link_options(/DEBUG)

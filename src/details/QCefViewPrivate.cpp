@@ -1,4 +1,4 @@
-﻿#include "QCefViewPrivate.h"
+#include "QCefViewPrivate.h"
 
 #pragma region stl_headers
 #include <stdexcept>
@@ -14,6 +14,7 @@
 #include <QInputMethodQueryEvent>
 #include <QMetaMethod>
 #include <QPainter>
+#include <QPalette>
 #include <QStyleOption>
 #include <QWindow>
 #pragma endregion
@@ -23,6 +24,8 @@
 #include <include/cef_browser.h>
 #include <include/cef_frame.h>
 #include <include/cef_parser.h>
+#include <include/cef_cookie.h>
+#include <include/cef_string_visitor.h>
 #pragma endregion
 
 #include <CefViewCoreProtocol.h>
@@ -53,6 +56,14 @@ QCefViewPrivate::QCefViewPrivate(QCefView* view, QCefContextPrivate* ctx, const 
 {
   sLiveInstances.insert(this);
 
+  // A QCefView may be created before a QCefContext exists, or when the context
+  // has no configuration applied yet. There is no CEF to use in that case, the
+  // view displays the unsupported placeholder instead.
+  if (!pContextPrivate_ || !pContextPrivate_->cefConfig()) {
+    qWarning() << "No usable QCefContext, QCefView will run in unsupported mode";
+    return;
+  }
+
   // get the global windowless rendering switch
   isOSRModeEnabled_ = pContextPrivate_->cefConfig()->windowlessRenderingEnabled().toBool();
 
@@ -70,11 +81,24 @@ QCefViewPrivate::~QCefViewPrivate()
   sLiveInstances.remove(this);
 }
 
+bool
+QCefViewPrivate::isCefAvailable() const
+{
+  return pContextPrivate_ && pContextPrivate_->isCefAvailable();
+}
+
 void
 QCefViewPrivate::createCefBrowser(const QString& url, const QCefSettingPrivate* setting)
 {
   Q_Q(QCefView);
   if (!q) {
+    return;
+  }
+
+  if (!isCefAvailable()) {
+    // There is no usable CEF runtime on this system, keep the view empty. The
+    // unsupported placeholder is painted in onPaintEvent.
+    qWarning() << "CEF is not available, skip creating the CEF browser";
     return;
   }
 
@@ -1097,9 +1121,42 @@ QCefViewPrivate::onPaintEvent(QPaintEvent* event)
     return;
   }
 
+  if (!isCefAvailable()) {
+    // there is no CEF runtime to render, display the unsupported placeholder
+    onPaintUnsupportedPlaceholder(event);
+    return;
+  }
+
   if (osr.pRenderer_ && pCefBrowser_) {
     osr.pRenderer_->render();
   }
+}
+
+void
+QCefViewPrivate::onPaintUnsupportedPlaceholder(QPaintEvent* event)
+{
+  Q_Q(QCefView);
+  if (!q) {
+    return;
+  }
+
+  QPainter painter(q);
+
+  // paint the widget background, there is no CEF content to show
+  painter.fillRect(event ? event->rect() : q->rect(), q->palette().brush(q->backgroundRole()));
+
+  // get the message to display
+  QString message;
+  if (pContextPrivate_ && pContextPrivate_->cefConfig()) {
+    message = pContextPrivate_->cefConfig()->unsupportedMessage();
+  }
+
+  if (message.isEmpty()) {
+    return;
+  }
+
+  painter.setPen(q->palette().color(QPalette::WindowText));
+  painter.drawText(q->rect(), Qt::AlignCenter | Qt::TextWordWrap, message);
 }
 
 void
@@ -1241,7 +1298,7 @@ QCefViewPrivate::onViewMouseEvent(QMouseEvent* event)
 void
 QCefViewPrivate::onViewWheelEvent(QWheelEvent* event)
 {
-  if (isOSRModeEnabled_) {
+  if (isOSRModeEnabled_ && pCefBrowser_ && pCefBrowser_->GetHost()) {
     // OSR mode
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
     auto p = event->pos();
@@ -1415,6 +1472,13 @@ QCefViewPrivate::browserId()
 void
 QCefViewPrivate::navigateToString(const QString& content)
 {
+  if (!isCefAvailable()) {
+    // no CEF runtime to navigate with and no libcef symbol may be used to
+    // encode the data url
+    qWarning() << "CEF is not available, skip navigating to the content";
+    return;
+  }
+
   std::string data = content.toStdString();
   data = CefURIEncode(CefBase64Encode(data.c_str(), data.size()), false).ToString();
   data = "data:text/html;base64," + data;
@@ -1428,6 +1492,13 @@ QCefViewPrivate::navigateToString(const QString& content)
 void
 QCefViewPrivate::navigateToUrl(const QString& url)
 {
+  if (!isCefAvailable()) {
+    // no CEF runtime to navigate with and no libcef symbol may be used to keep
+    // the pending url
+    qWarning() << "CEF is not available, skip navigating to the url";
+    return;
+  }
+
   lastUrl_.FromString(url.toStdString());
 
   if (pCefBrowser_) {
@@ -1712,4 +1783,122 @@ QCefViewPrivate::zoomLevel()
   }
 
   return 0;
+}
+
+// WF 2026-07-29: frame 查找辅助函数，复用 executeJavascript 中的模式
+static CefRefPtr<CefFrame> lookupFrame(CefRefPtr<CefBrowser> browser, const QCefFrameId& frameId)
+{
+  if (!browser)
+    return nullptr;
+
+  auto fid = ValueConvertor::FrameIdQ2C(frameId);
+  if (frameId == QCefView::MainFrameID)
+    return browser->GetMainFrame();
+
+#if CEF_VERSION_MAJOR < 122
+  return browser->GetFrame(fid);
+#else
+  return browser->GetFrameByIdentifier(fid);
+#endif
+}
+
+void
+QCefViewPrivate::fetchDisplayText(const QCefFrameId& frameId)
+{
+  if (!pCefBrowser_)
+    return;
+
+  auto frame = lookupFrame(pCefBrowser_, frameId);
+  if (!frame)
+    return;
+
+  class DisplayTextVisitor : public CefStringVisitor
+  {
+    QPointer<QCefView> q_ptr_;
+    QCefBrowserId browserId_;
+    QCefFrameId frameId_;
+    bool isMainFrame_;
+  public:
+    DisplayTextVisitor(QPointer<QCefView> q,
+                       QCefBrowserId browserId,
+                       QCefFrameId frameId,
+                       bool isMainFrame)
+      : q_ptr_(q)
+      , browserId_(browserId)
+      , frameId_(frameId)
+      , isMainFrame_(isMainFrame)
+    {}
+    void Visit(const CefString& text) override
+    {
+      QString t = QString::fromStdString(text);
+      QMetaObject::invokeMethod(qApp, [q = q_ptr_, browserId = browserId_,
+                                      frameId = frameId_, isMain = isMainFrame_, t]() {
+        if (q)
+          emit q->displayTextReady(browserId, frameId, isMain, t);
+      });
+    }
+    IMPLEMENT_REFCOUNTING(DisplayTextVisitor);
+  };
+
+  frame->GetText(
+    new DisplayTextVisitor(q_ptr, pCefBrowser_->GetIdentifier(),
+                           frameId, frame->IsMain()));
+}
+
+void
+QCefViewPrivate::fetchCookies(const QCefFrameId& frameId)
+{
+  if (!pCefBrowser_)
+    return;
+
+  auto frame = lookupFrame(pCefBrowser_, frameId);
+  if (!frame)
+    return;
+
+  auto url = frame->GetURL();
+
+  class CookieVisitor : public CefCookieVisitor
+  {
+    QPointer<QCefView> q_ptr_;
+    QCefBrowserId browserId_;
+    QCefFrameId frameId_;
+    bool isMainFrame_;
+    QVariantList cookies_;
+  public:
+    CookieVisitor(QPointer<QCefView> q,
+                  QCefBrowserId browserId,
+                  QCefFrameId frameId,
+                  bool isMainFrame)
+      : q_ptr_(q)
+      , browserId_(browserId)
+      , frameId_(frameId)
+      , isMainFrame_(isMainFrame)
+    {}
+    bool Visit(const CefCookie& cookie, int count, int total, bool&) override
+    {
+      QVariantMap m;
+      m["name"] = QString::fromStdString(CefString(&cookie.name));
+      m["value"] = QString::fromStdString(CefString(&cookie.value));
+      m["domain"] = QString::fromStdString(CefString(&cookie.domain));
+      m["path"] = QString::fromStdString(CefString(&cookie.path));
+      m["secure"] = cookie.secure ? true : false;
+      m["httponly"] = cookie.httponly ? true : false;
+      cookies_.append(m);
+      if (total == 0 || count == total - 1) {
+        QMetaObject::invokeMethod(qApp, [q = q_ptr_, browserId = browserId_,
+                                        frameId = frameId_, isMain = isMainFrame_,
+                                        cookies = cookies_]() {
+          if (q)
+            emit q->cookiesReady(browserId, frameId, isMain, cookies);
+        });
+      }
+      return true;
+    }
+    IMPLEMENT_REFCOUNTING(CookieVisitor);
+  };
+
+  auto manager = CefCookieManager::GetGlobalManager(nullptr);
+  manager->VisitUrlCookies(
+    url, true,
+    new CookieVisitor(q_ptr, pCefBrowser_->GetIdentifier(), frameId, frame->IsMain()));
 }

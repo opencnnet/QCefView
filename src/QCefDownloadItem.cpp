@@ -17,10 +17,13 @@ QCefDownloadItem::start(const QString& path, bool useDefaultDialog) const
   if (d_ptr->isStarted)
     return;
 
-  if (d_ptr->downloadItemCallback) {
-    d_ptr->downloadItemCallback->Resume();
+  if (!d_ptr->downloadItemCallback || !d_ptr->beforeDownloadCallback) {
+    // the callbacks are only set while the download is pending
+    qWarning() << "The callbacks of the download item are not available";
+    return;
   }
 
+  d_ptr->downloadItemCallback->Resume();
   d_ptr->beforeDownloadCallback->Continue(path.toStdString(), useDefaultDialog);
 
   d_ptr->isStarted = true;
@@ -30,6 +33,9 @@ void
 QCefDownloadItem::pause() const
 {
   Q_D(const QCefDownloadItem);
+  if (!d_ptr->downloadItemCallback)
+    return;
+
   d_ptr->downloadItemCallback->Pause();
 }
 
@@ -37,6 +43,9 @@ void
 QCefDownloadItem::resume() const
 {
   Q_D(const QCefDownloadItem);
+  if (!d_ptr->downloadItemCallback)
+    return;
+
   d_ptr->downloadItemCallback->Resume();
 }
 
@@ -44,6 +53,9 @@ void
 QCefDownloadItem::cancel() const
 {
   Q_D(const QCefDownloadItem);
+  if (!d_ptr->downloadItemCallback)
+    return;
+
   d_ptr->downloadItemCallback->Cancel();
 }
 

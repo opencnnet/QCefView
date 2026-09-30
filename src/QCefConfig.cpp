@@ -1,4 +1,4 @@
-﻿#include <QCefConfig.h>
+#include <QCefConfig.h>
 
 #include "details/QCefConfigPrivate.h"
 #include "details/utils/CommonUtils.h"
@@ -195,6 +195,20 @@ QCefConfig::userAgent() const
 {
   Q_D(const QCefConfig);
   return QString::fromStdString(d->userAgent_);
+}
+
+void
+QCefConfig::setUnsupportedMessage(const QString& message)
+{
+  Q_D(QCefConfig);
+  d->unsupportedMessage_ = message.toStdString();
+}
+
+const QString
+QCefConfig::unsupportedMessage() const
+{
+  Q_D(const QCefConfig);
+  return QString::fromStdString(d->unsupportedMessage_);
 }
 
 void

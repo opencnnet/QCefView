@@ -1,4 +1,4 @@
-﻿#include <QCefContext.h>
+#include <QCefContext.h>
 
 #pragma region qt_headers
 #include <QDebug>
@@ -99,15 +99,24 @@ QCefContext::cefConfig() const
 }
 
 bool
+QCefContext::isCefAvailable() const
+{
+  Q_D(const QCefContext);
+  return d->isCefAvailable();
+}
+
+bool
 QCefContext::init(const QCefConfig* config)
 {
   Q_ASSERT_X(!s_self, "QCefContext::init()", "There can be only one QCefContext instance");
   s_self = this;
 
   Q_D(QCefContext);
-  d->initialize(config);
 
-  return true;
+  // The CEF runtime may be unavailable (for example on Windows 7/8/8.1). This
+  // is not fatal, the context stays valid and the QCefView instances will
+  // render an unsupported placeholder instead of web content.
+  return d->initialize(config);
 }
 
 void

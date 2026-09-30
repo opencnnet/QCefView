@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: QCefContext.h
  * Project: QCefView
  * Created: 29th March 2016
@@ -125,6 +125,19 @@ public:
   /// </summary>
   /// <returns>The QCefConfig instance</returns>
   const QCefConfig* cefConfig() const;
+
+  /// <summary>
+  /// Indicates whether the CEF runtime is available and has been initialized successfully
+  /// </summary>
+  /// <returns>True if CEF is available; otherwise false</returns>
+  /// <remarks>
+  /// This returns false when the CEF binaries can not be used on the current
+  /// system, for example on Windows 7, Windows 8 and Windows 8.1. In that case
+  /// the <see cref="QCefView"/> instances display a placeholder message instead
+  /// of web content. The message can be customized with
+  /// <see cref="QCefConfig::setUnsupportedMessage"/>
+  /// </remarks>
+  bool isCefAvailable() const;
 
 protected:
   /// <summary>

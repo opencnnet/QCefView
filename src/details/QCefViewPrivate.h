@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #pragma region qt_headers
 #include <QMenu>
 #include <QMutex>
@@ -138,6 +138,12 @@ public:
 
   void destroyCefBrowser();
 
+  /// <summary>
+  /// Indicates whether the underlying CEF runtime is available on this system
+  /// </summary>
+  /// <returns>True if CEF is available; otherwise false</returns>
+  bool isCefAvailable() const;
+
   void addLocalFolderResource(const QString& path, const QString& url, int priority = 0);
 
   void addArchiveResource(const QString& path, const QString& url, const QString& password = "", int priority = 0);
@@ -240,6 +246,13 @@ protected:
 
   void onPaintEvent(QPaintEvent* event);
 
+  /// <summary>
+  /// Paints the placeholder which is displayed when the CEF runtime is not
+  /// available on the current system
+  /// </summary>
+  /// <param name="event">The paint event</param>
+  void onPaintUnsupportedPlaceholder(QPaintEvent* event);
+
   void onViewMoved();
 
   void onViewSizeChanged(const QSize& size, const QSize& oldSize);
@@ -305,4 +318,8 @@ public:
   void setZoomLevel(double level);
 
   double zoomLevel();
+
+  void fetchDisplayText(const QCefFrameId& frameId);
+
+  void fetchCookies(const QCefFrameId& frameId);
 };

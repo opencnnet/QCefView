@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #pragma region stl_headers
 #include <list>
@@ -41,6 +41,12 @@ public:
   std::string bridgeObjectName_;
   std::string builtinSchemeName_;
   std::string acceptLanguageList_;
+
+  /// <summary>
+  /// Message displayed by the QCefView instances when the CEF runtime is not
+  /// available on the current system
+  /// </summary>
+  std::string unsupportedMessage_ = "cef is not supported on this operating system.";
 
 #if defined(Q_OS_WINDOWS) || defined(Q_OS_LINUX)
   std::string localesDirectoryPath_;
