@@ -12,3 +12,9 @@ include/QCefView_global.h
 .idea/
 cmake-build-*/
 build
+
+# Extracted CEF binary distributions. The package is ~400 MB and libcef.dll alone is
+# 256 MB, which exceeds GitHub's 100 MB per-file limit, so it must not be committed.
+# Get it from https://cef-builds.spotifycdn.com/index.html, or let the build reuse a
+# QCEFVIEW_OFFLINE_DEPS_DIR cache where it is already extracted.
+deps/cefviewcore-src-454c724/dep/cef_binary_*/
