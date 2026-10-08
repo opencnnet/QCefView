@@ -17,7 +17,34 @@
 #define CEF_FRAMEWORK_NAME "Chromium Embedded Framework.framework"
 #define HELPER_BINARY_NAME kCefViewRenderProcessName
 #define HELPER_BUNDLE_NAME HELPER_BINARY_NAME ".app"
-#define CEFVIEW_FOLDER_NAME "CefView"
+
+/// <summary>
+/// The subdirectory of the QCefView framework resources which holds the CEF
+/// runtime (the CEF framework and the helper application), empty when the CEF
+/// runtime is deployed directly into the Resources directory.
+/// </summary>
+/// <remarks>
+/// The layout is chosen at build time, see CEF_RUNTIME_IN_SUBDIR in the top
+/// level CMakeLists.txt. This value must match the layout which the build system
+/// deployed, otherwise the CEF framework can not be loaded.
+/// </remarks>
+#ifndef QCEFVIEW_CEF_RUNTIME_SUBDIR
+#define QCEFVIEW_CEF_RUNTIME_SUBDIR "CefView"
+#endif
+#define CEFVIEW_FOLDER_NAME QCEFVIEW_CEF_RUNTIME_SUBDIR
+
+/// <summary>
+/// Appends the CEF runtime subdirectory to the given path.
+/// </summary>
+/// <returns>The path of the CEF runtime directory</returns>
+static NSString*
+cefRuntimePath(NSString* path)
+{
+  if ('\0' == CEFVIEW_FOLDER_NAME[0])
+    return path;
+
+  return [path stringByAppendingPathComponent:@CEFVIEW_FOLDER_NAME];
+}
 
 @interface PathFactory : NSObject
 + (NSString*)AppMainBundlePath;
@@ -33,16 +60,14 @@
 
 + (NSString*)CefFrameworkPath
 {
-  NSString* path = [[NSBundle bundleForClass:[PathFactory class]] resourcePath];
-  path = [path stringByAppendingPathComponent:@CEFVIEW_FOLDER_NAME];
+  NSString* path = cefRuntimePath([[NSBundle bundleForClass:[PathFactory class]] resourcePath]);
   path = [path stringByAppendingPathComponent:@CEF_FRAMEWORK_NAME];
   return path;
 }
 
 + (NSString*)CefSubprocessPath
 {
-  NSString* path = [[NSBundle bundleForClass:[PathFactory class]] resourcePath];
-  path = [path stringByAppendingPathComponent:@CEFVIEW_FOLDER_NAME];
+  NSString* path = cefRuntimePath([[NSBundle bundleForClass:[PathFactory class]] resourcePath]);
   path = [path stringByAppendingPathComponent:@HELPER_BUNDLE_NAME];
   path = [path stringByAppendingPathComponent:@"Contents"];
   path = [path stringByAppendingPathComponent:@"MacOS"];

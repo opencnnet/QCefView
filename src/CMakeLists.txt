@@ -111,7 +111,7 @@ if(OS_WINDOWS)
     COMMAND ${CMAKE_COMMAND}
     -E copy_directory
     "$<TARGET_FILE_DIR:CefViewWing>"
-    "$<TARGET_FILE_DIR:QCefView>/CefView"
+    "$<TARGET_FILE_DIR:QCefView>/${QCEFVIEW_CEF_RUNTIME_SUBDIR}"
 
     # gnerate a file contains timestamp
     COMMAND ${CMAKE_COMMAND}
@@ -231,28 +231,39 @@ if(OS_MACOS)
   add_custom_command(TARGET QCefView
     POST_BUILD
 
-    # create plugins directory
+    # create the CEF runtime directory
     COMMAND mkdir -p
-    "$<TARGET_BUNDLE_DIR:QCefView>/Resources/CefView/"
+    "$<TARGET_BUNDLE_DIR:QCefView>/Resources/${QCEFVIEW_CEF_RUNTIME_SUBDIR}/"
 
     # copy the CefViewCore binaries to resource directory
     COMMAND cp -a
     "$<TARGET_BUNDLE_DIR:CefViewWing>/../"
-    "$<TARGET_BUNDLE_DIR:QCefView>/Resources/CefView/"
+    "$<TARGET_BUNDLE_DIR:QCefView>/Resources/${QCEFVIEW_CEF_RUNTIME_SUBDIR}/"
 
     # adjust file permission
     COMMAND
-    cd "$<TARGET_BUNDLE_DIR:QCefView>/Resources/CefView/Chromium Embedded Framework.framework/Resources" && chmod +rw *.bin
+    cd "$<TARGET_BUNDLE_DIR:QCefView>/Resources/${QCEFVIEW_CEF_RUNTIME_SUBDIR}/Chromium Embedded Framework.framework/Resources" && chmod +rw *.bin
 
     # sign the cef framework
     COMMAND codesign
     --force
     --sign -
-    "$<TARGET_BUNDLE_DIR:QCefView>/Resources/CefView/Chromium Embedded Framework.framework"
+    "$<TARGET_BUNDLE_DIR:QCefView>/Resources/${QCEFVIEW_CEF_RUNTIME_SUBDIR}/Chromium Embedded Framework.framework"
   )
 endif() # OS_MACOS
 
 target_compile_definitions(QCefView PRIVATE NOMINMAX)
+
+# The directory which holds the CEF runtime files, passed to the platform
+# specific CEF context implementations. It has to match the deployment layout
+# which is produced above, see CEF_RUNTIME_IN_SUBDIR in CMakeLists.txt.
+# The value is always a string literal, an empty one means the CEF runtime is
+# deployed next to the application binaries. On Linux the CEF runtime is always
+# deployed next to the binaries and the definition is not used.
+target_compile_definitions(QCefView
+  PRIVATE
+  QCEFVIEW_CEF_RUNTIME_SUBDIR="${QCEFVIEW_CEF_RUNTIME_SUBDIR}"
+)
 
 target_include_directories(QCefView
   PUBLIC

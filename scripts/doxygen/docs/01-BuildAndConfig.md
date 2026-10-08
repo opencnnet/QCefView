@@ -208,3 +208,27 @@ Here's a detailed overview of the available CMake configuration options:
 *   **Default:** `OFF`
 *   **Usage:**  This option integrates CEF's message loop with Qt's event loop, providing better responsiveness and compatibility.  In rare cases, disabling this option might resolve specific event loop conflicts.
 
+### CEF_RUNTIME_IN_SUBDIR
+
+*   **Description:**  Deploys the CEF runtime files (`libcef`/`Chromium Embedded Framework`, the helper processes and the CEF resources such as `locales`, `resources.pak` and `icudtl.dat`) into a subdirectory of the application binary directory instead of putting them next to the application binaries.
+*   **Values:** `ON` (enable) or `OFF` (disable).
+*   **Default:** `ON`
+*   **Usage:**  Keep it enabled (the default) to keep the application directory clean, this is the layout QCefView has always used.  Disable it if you need all the CEF files to sit directly next to your executable, for example because a deployment tool or a packaging script expects a flat directory.
+
+    *   `ON` (Windows): `<app dir>/CefView/libcef.dll`, `<app dir>/CefView/CefViewWing.exe`, ...
+    *   `OFF` (Windows): `<app dir>/libcef.dll`, `<app dir>/CefViewWing.exe`, ...
+    *   `ON` (macOS): `QCefView.framework/Resources/CefView/Chromium Embedded Framework.framework`, ...
+    *   `OFF` (macOS): `QCefView.framework/Resources/Chromium Embedded Framework.framework`, ...
+
+> [!warning]
+> This option is applied when QCefView is compiled, the library looks up the CEF binaries in the very same location.  A QCefView binary and a set of CEF runtime files which were produced with different settings do not work together.
+>
+> On Linux the CEF runtime is always deployed next to the binaries (because `libcef.so` is linked directly), so the option has no effect there.
+
+### CEF_RUNTIME_SUBDIR
+
+*   **Description:**  The name of the subdirectory which holds the CEF runtime files.
+*   **Values:**  A directory name, must not contain a path separator.
+*   **Default:** `CefView`
+*   **Usage:**  Set this option if you need a different folder name than `CefView`.  It is only used when `CEF_RUNTIME_IN_SUBDIR` is `ON`.
+

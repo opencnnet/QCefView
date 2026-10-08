@@ -11,6 +11,20 @@
 
 #include "../../details/QCefConfigPrivate.h"
 
+/// <summary>
+/// The subdirectory of the application binary directory which holds the CEF
+/// runtime files (libcef.dll, the helper process and the CEF resources), empty
+/// when the CEF runtime is deployed directly next to the application binaries.
+/// </summary>
+/// <remarks>
+/// The layout is chosen at build time, see CEF_RUNTIME_IN_SUBDIR in the top
+/// level CMakeLists.txt. This value must match the layout which the build system
+/// deployed, otherwise libcef.dll can not be loaded.
+/// </remarks>
+#ifndef QCEFVIEW_CEF_RUNTIME_SUBDIR
+#define QCEFVIEW_CEF_RUNTIME_SUBDIR "CefView"
+#endif
+
 namespace {
 /// <summary>
 /// The layout of RTL_OSVERSIONINFOW, declared locally to avoid including
@@ -122,7 +136,15 @@ QCefContextPrivate::initializeCef(const QCefConfig* config)
   std::vector<wchar_t> modPath(MAX_PATH * 4);
   ::GetModuleFileNameW(nullptr, modPath.data(), static_cast<DWORD>(modPath.size()));
   ::PathRemoveFileSpecW(modPath.data());
-  ::PathCombineW(modPath.data(), modPath.data(), L"CefView");
+
+  // The CEF runtime files are either deployed next to the application binaries
+  // or into a subdirectory of it, see CEF_RUNTIME_IN_SUBDIR. Append the
+  // subdirectory so that everything below works on the directory which actually
+  // contains libcef.dll.
+  const std::wstring cefRuntimeSubDir = QString::fromUtf8(QCEFVIEW_CEF_RUNTIME_SUBDIR).toStdWString();
+  if (!cefRuntimeSubDir.empty())
+    ::PathCombineW(modPath.data(), modPath.data(), cefRuntimeSubDir.c_str());
+
   ::SetDllDirectoryW(modPath.data());
 
   // Probe the CEF runtime before touching any CEF API. The version check above

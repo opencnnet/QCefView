@@ -41,6 +41,40 @@ option(USE_WIN_DCOMPOSITION
   "Enabled Windows direct composition for hardware rendering, _WIN32_WINNT >= 0x602 (Windows 8) is required"
   OFF
 )
+option(CEF_RUNTIME_IN_SUBDIR
+  "Deploy the CEF runtime files (libcef, the helper processes and the CEF resources) into a subdirectory of the application binary directory instead of putting them next to the application binaries (Windows and macOS)"
+  ON
+)
+set(CEF_RUNTIME_SUBDIR
+  "CefView"
+  CACHE STRING
+  "Name of the subdirectory which holds the CEF runtime files, relative to the application binary directory (only used when CEF_RUNTIME_IN_SUBDIR is ON)"
+)
+
+# The directory (relative to the application binary directory) into which the CEF
+# runtime files are deployed, empty means they are deployed directly next to the
+# application binaries.
+#   Windows: <app dir>/<subdir>/libcef.dll, <app dir>/<subdir>/CefViewWing.exe, ...
+#   macOS:   QCefView.framework/Resources/<subdir>/Chromium Embedded Framework.framework, ...
+# This value is passed to QCefView as the QCEFVIEW_CEF_RUNTIME_SUBDIR compile
+# definition, the runtime lookup of the CEF binaries uses the very same value.
+# On Linux the CEF runtime is always deployed next to the binaries (libcef.so is
+# linked directly), so the option has no effect there.
+if(CEF_RUNTIME_IN_SUBDIR)
+  set(QCEFVIEW_CEF_RUNTIME_SUBDIR "${CEF_RUNTIME_SUBDIR}")
+else()
+  set(QCEFVIEW_CEF_RUNTIME_SUBDIR "")
+endif()
+
+if(QCEFVIEW_CEF_RUNTIME_SUBDIR MATCHES "[/\\\\]")
+  message(FATAL_ERROR "CEF_RUNTIME_SUBDIR must be a plain directory name, not a path: '${CEF_RUNTIME_SUBDIR}'")
+endif()
+
+if(QCEFVIEW_CEF_RUNTIME_SUBDIR)
+  message(STATUS "The CEF runtime will be deployed to subdirectory '${QCEFVIEW_CEF_RUNTIME_SUBDIR}'")
+else()
+  message(STATUS "The CEF runtime will be deployed next to the application binaries")
+endif()
 
 # append cmake config module path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
