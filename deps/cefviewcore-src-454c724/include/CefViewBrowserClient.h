@@ -29,7 +29,6 @@
 /// Forward declaration
 /// </summary>
 class CefViewQueryHandler;
-class CefViewPermissionHandler;
 
 /// <summary>
 ///
@@ -76,11 +75,6 @@ private:
 
   // resource manager
   CefRefPtr<CefResourceManager> resource_manager_;
-
-  // permission handler
-#if CEF_VERSION_MAJOR >= 136
-  CefRefPtr<CefViewPermissionHandler> permission_handler_;
-#endif
 
   // browser map
   std::unordered_map<int, CefRefPtr<CefBrowser>> browser_map_;
@@ -373,13 +367,6 @@ protected:
                            ErrorCode errorCode,
                            const CefString& errorText,
                            const CefString& failedUrl) override;
-#pragma endregion
-
-  // CefPermissionHandler methods
-#pragma region CefPermissionHandler
-#if CEF_VERSION_MAJOR >= 136
-  virtual CefRefPtr<CefPermissionHandler> GetPermissionHandler() override;
-#endif
 #pragma endregion
 
   // CefRenderHandler

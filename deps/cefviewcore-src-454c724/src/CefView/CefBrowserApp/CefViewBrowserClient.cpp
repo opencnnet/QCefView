@@ -13,10 +13,6 @@
 #include "CefViewQueryHandler/CefViewQueryHandler.h"
 #include "CefViewDirectoryProvider/CefViewDirectoryProvider.h"
 
-#if CEF_VERSION_MAJOR >= 136
-#include "CefViewPermissionHandler/CefViewPermissionHandler.h"
-#endif
-
 CefViewBrowserClient::CefViewBrowserClient(CefRefPtr<CefViewBrowserApp> app,
                                            CefViewBrowserClientDelegateInterface::RefPtr delegate)
   : app_(app)
@@ -42,11 +38,6 @@ CefViewBrowserClient::CefViewBrowserClient(CefRefPtr<CefViewBrowserApp> app,
   // Create the browser-side router for query handling.
   message_router_config_.js_query_function = kCefViewQueryFuntionName;
   message_router_config_.js_cancel_function = kCefViewQueryCancelFunctionName;
-
-#if CEF_VERSION_MAJOR >= 136
-  // Create the handler that answers the permission prompts (local network access).
-  permission_handler_ = new CefViewPermissionHandler();
-#endif
 }
 
 CefViewBrowserClient::~CefViewBrowserClient()

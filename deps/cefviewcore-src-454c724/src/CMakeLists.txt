@@ -25,13 +25,6 @@ file(GLOB_RECURSE CefViewCore_SRC_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/CefView/CefBrowserApp/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/CefView/CefBrowserApp/*.cpp"
 )
-# listed explicitly so that the files are compiled even when the GLOB above has
-# been evaluated before the files existed
-list(APPEND CefViewCore_SRC_FILES
-  "${CMAKE_CURRENT_SOURCE_DIR}/CefView/CefBrowserApp/CefViewPermissionHandler/CefViewPermissionHandler.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/CefView/CefBrowserApp/CefViewPermissionHandler/CefViewPermissionHandler.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/CefView/CefBrowserApp/CefViewBrowserClient_PermissionHandler.cpp"
-)
 source_group(
   TREE "${CMAKE_CURRENT_SOURCE_DIR}/CefView/CefBrowserApp"
   PREFIX Source

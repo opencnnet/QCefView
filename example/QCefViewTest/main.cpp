@@ -68,6 +68,18 @@ main(int argc, char* argv[])
   config.addCommandLineSwitch("enable-aggressive-domstorage-flushing");
   // allow remote debugging
   config.addCommandLineSwitchWithValue("remote-allow-origins", "*");
+  // Chromium 138 enables the local network access (LNA) checks by default, so
+  // web content can not reach local/private endpoints (127.0.0.1, 10.x.x.x,
+  // 192.168.x.x, *.local ...) any more. In CEF such a request is blocked
+  // without raising a permission prompt, hence a CefPermissionHandler never
+  // gets the chance to grant it. Keep the checks but let them only produce
+  // DevTools warnings.
+  // Use addCommandLineSwitchWithValue("disable-features",
+  // "LocalNetworkAccessChecks") instead to turn the checks off completely.
+  // NOTE: enable-features/disable-features can only be set once (the value of
+  // the same switch is overwritten), merge the features into a single value.
+  config.addCommandLineSwitchWithValue(
+    "enable-features", "LocalNetworkAccessChecks:LocalNetworkAccessChecksWarn/true");
 
   // set cache folder
   config.setCachePath(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
