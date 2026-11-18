@@ -33,6 +33,33 @@ class QCEFVIEW_EXPORT QCefContext : public QObject
 
 public:
   /// <summary>
+  /// Describes why the CEF runtime is not available
+  /// </summary>
+  enum class InitializationError
+  {
+    /// <summary>
+    /// The CEF runtime is available, no error occurred
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// The operating system is too old to run the bundled CEF runtime
+    /// </summary>
+    OperatingSystemUnsupported,
+
+    /// <summary>
+    /// The CEF binaries (for example libcef.dll) could not be loaded
+    /// </summary>
+    RuntimeLoadFailed,
+
+    /// <summary>
+    /// The CEF binaries were loaded but the CEF runtime failed to initialize
+    /// </summary>
+    RuntimeInitializationFailed,
+  };
+  Q_ENUM(InitializationError)
+
+  /// <summary>
   /// Constructs the CEF context
   /// </summary>
   /// <param name="app">The application</param>
@@ -132,12 +159,28 @@ public:
   /// <returns>True if CEF is available; otherwise false</returns>
   /// <remarks>
   /// This returns false when the CEF binaries can not be used on the current
-  /// system, for example on Windows 7, Windows 8 and Windows 8.1. In that case
-  /// the <see cref="QCefView"/> instances display a placeholder message instead
-  /// of web content. The message can be customized with
-  /// <see cref="QCefConfig::setUnsupportedMessage"/>
+  /// system, for example on Windows 7, Windows 8 and Windows 8.1 or when the
+  /// CEF binaries can not be loaded. In that case the <see cref="QCefView"/>
+  /// instances display a placeholder message instead of web content. The
+  /// message set with <see cref="QCefConfig::setUnsupportedMessage"/> is shown
+  /// for an unsupported operating system, any other failure shows a generic
+  /// message
   /// </remarks>
   bool isCefAvailable() const;
+
+  /// <summary>
+  /// Gets the reason why the CEF runtime is not available
+  /// </summary>
+  /// <returns>
+  /// The initialization error, <see cref="InitializationError::None"/> when the
+  /// CEF runtime is available
+  /// </returns>
+  /// <remarks>
+  /// This distinguishes the cases which <see cref="isCefAvailable"/> reports as
+  /// false, for example an unsupported operating system, CEF binaries which can
+  /// not be loaded, and a failed CefInitialize() call
+  /// </remarks>
+  InitializationError cefInitializationError() const;
 
 protected:
   /// <summary>

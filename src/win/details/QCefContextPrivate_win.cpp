@@ -50,12 +50,7 @@ struct OsVersionInfo
 /// report a wrong version.
 ///
 /// CEF is based on Chromium 110 or later, which dropped support for Windows 7,
-/// Windows 8 and Windows 8.1. Checking this before anything else is essential:
-/// when the loader is asked to map libcef.dll on those systems it reports the
-/// missing entry point in a modal hard error dialog (for example "The procedure
-/// entry point DiscardVirtualMemory could not be located in the dynamic link
-/// library KERNEL32.dll"), and that dialog is shown even though the failed load
-/// itself is handled by the caller.
+/// Windows 8 and Windows 8.1.
 ///
 /// If the version can not be determined, true is returned and the load probe
 /// decides instead.
@@ -88,8 +83,6 @@ isOperatingSystemSupported()
 /// <param name="libCefPath">The full path of libcef.dll</param>
 /// <returns>True if the CEF runtime is usable; otherwise false</returns>
 /// <remarks>
-/// This covers the cases which the Windows version check does not predict, for
-/// example a missing dependency or an unusable deployment of the CEF binaries.
 /// Because QCefView delay-loads libcef.dll, a failed load would otherwise raise
 /// a structured exception which terminates the process instead of returning an
 /// error. Loading it explicitly here turns that into an ordinary failure.
@@ -126,10 +119,17 @@ bool
 QCefContextPrivate::initializeCef(const QCefConfig* config)
 {
   // Refuse to continue on systems which can not run the bundled CEF runtime.
-  // This has to happen before libcef.dll is touched at all, see
-  // isOperatingSystemSupported() for the reason.
+  // This has to happen before libcef.dll is touched at all.
+  //
+  // CEF is based on Chromium 110 or later, which dropped support for Windows 7,
+  // Windows 8 and Windows 8.1. Checking this before anything else is essential:
+  // when the loader is asked to map libcef.dll on those systems it reports the
+  // missing entry point in a modal hard error dialog (for example "The procedure
+  // entry point DiscardVirtualMemory could not be located in the dynamic link
+  // library KERNEL32.dll"), and that dialog is shown even though the failed load
+  // itself is handled by the caller.
   if (!isOperatingSystemSupported()) {
-    qWarning() << "The current Windows version can not run the bundled CEF runtime";
+    cefInitializationError_ = QCefContext::InitializationError::OperatingSystemUnsupported;
     return false;
   }
 
@@ -155,6 +155,7 @@ QCefContextPrivate::initializeCef(const QCefConfig* config)
     std::wstring libCefPath(modPath.data());
     libCefPath += L"\\libcef.dll";
     if (!probeCefRuntime(libCefPath)) {
+      cefInitializationError_ = QCefContext::InitializationError::RuntimeLoadFailed;
       return false;
     }
   }
@@ -224,6 +225,7 @@ QCefContextPrivate::initializeCef(const QCefConfig* config)
 
   CefMainArgs main_args(::GetModuleHandle(nullptr));
   if (!CefInitialize(main_args, cef_settings, app, sandboxInfo)) {
+    cefInitializationError_ = QCefContext::InitializationError::RuntimeInitializationFailed;
     qWarning() << "Failed to initialize the CEF runtime";
     return false;
   }

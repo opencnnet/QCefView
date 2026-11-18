@@ -105,6 +105,13 @@ QCefContext::isCefAvailable() const
   return d->isCefAvailable();
 }
 
+QCefContext::InitializationError
+QCefContext::cefInitializationError() const
+{
+  Q_D(const QCefContext);
+  return d->cefInitializationError();
+}
+
 bool
 QCefContext::init(const QCefConfig* config)
 {

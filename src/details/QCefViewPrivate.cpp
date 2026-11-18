@@ -1145,10 +1145,12 @@ QCefViewPrivate::onPaintUnsupportedPlaceholder(QPaintEvent* event)
   // paint the widget background, there is no CEF content to show
   painter.fillRect(event ? event->rect() : q->rect(), q->palette().brush(q->backgroundRole()));
 
-  // get the message to display
+  // get the message to display, this is the message configured by the host
+  // application for unsupported systems, or a generic message for any other
+  // reason why the CEF runtime is unavailable
   QString message;
-  if (pContextPrivate_ && pContextPrivate_->cefConfig()) {
-    message = pContextPrivate_->cefConfig()->unsupportedMessage();
+  if (pContextPrivate_) {
+    message = pContextPrivate_->unsupportedPlaceholderMessage();
   }
 
   if (message.isEmpty()) {

@@ -365,6 +365,10 @@ public:
   /// This is used on systems which can not run the bundled CEF runtime, for
   /// example Windows 7, Windows 8 and Windows 8.1. Setting an empty message
   /// makes the placeholder only paint the widget background.
+  ///
+  /// The message applies to the unsupported operating system only. When the CEF
+  /// runtime is unavailable for any other reason, for example the CEF binaries
+  /// can not be loaded, a generic message is shown instead.
   /// </remarks>
   void setUnsupportedMessage(const QString& message);
 

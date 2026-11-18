@@ -14,6 +14,8 @@
 #include <QTimer>
 #pragma endregion
 
+#include <QCefContext.h>
+
 #include <CefViewBrowserApp.h>
 #include <CefViewBrowserClient.h>
 
@@ -78,6 +80,12 @@ private:
   /// </summary>
   bool cefAvailable_ = false;
 
+  /// <summary>
+  /// The reason why the CEF runtime is not available, stays None when the
+  /// runtime has been initialized successfully
+  /// </summary>
+  QCefContext::InitializationError cefInitializationError_ = QCefContext::InitializationError::None;
+
 public:
   /// <summary>
   ///
@@ -100,6 +108,22 @@ public:
   /// </summary>
   /// <returns>True if CEF is available; otherwise false</returns>
   bool isCefAvailable() const;
+
+  /// <summary>
+  /// Gets the reason why the CEF runtime is not available
+  /// </summary>
+  /// <returns>The initialization error</returns>
+  QCefContext::InitializationError cefInitializationError() const;
+
+  /// <summary>
+  /// Gets the text which the QCefView instances paint when the CEF runtime is
+  /// not available
+  /// </summary>
+  /// <returns>
+  /// The message set by the host application when the operating system is not
+  /// supported, a generic message for any other failure
+  /// </returns>
+  QString unsupportedPlaceholderMessage() const;
 
   /// <summary>
   ///

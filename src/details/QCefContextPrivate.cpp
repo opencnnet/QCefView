@@ -46,6 +46,26 @@ QCefContextPrivate::isCefAvailable() const
   return cefAvailable_;
 }
 
+QCefContext::InitializationError
+QCefContextPrivate::cefInitializationError() const
+{
+  return cefInitializationError_;
+}
+
+QString
+QCefContextPrivate::unsupportedPlaceholderMessage() const
+{
+  // The message configured by the host application describes the case of an
+  // unsupported operating system, it applies to that case only. Any other
+  // failure (for example the CEF binaries can not be loaded) shows a generic
+  // message.
+  if (cefInitializationError_ == QCefContext::InitializationError::OperatingSystemUnsupported) {
+    return config_ ? config_->unsupportedMessage() : QString();
+  }
+
+  return QStringLiteral("The CEF runtime is not available");
+}
+
 bool
 QCefContextPrivate::initialize(const QCefConfig* config)
 {
@@ -55,9 +75,15 @@ QCefContextPrivate::initialize(const QCefConfig* config)
   cefAvailable_ = initializeCef(config);
   if (!cefAvailable_) {
     // The CEF runtime is not usable on this system (for example Windows
-    // 7/8/8.1). This is not fatal, the QCefView instances will display an
-    // unsupported placeholder instead of web content.
-    qWarning() << "Failed to initialize CEF, QCefView will run in unsupported mode";
+    // 7/8/8.1 or a missing/incompatible CEF deployment). This is not fatal,
+    // the QCefView instances will display an unsupported placeholder instead
+    // of web content.
+    if (cefInitializationError_ == QCefContext::InitializationError::None) {
+      // the platform implementation did not report a reason
+      cefInitializationError_ = QCefContext::InitializationError::RuntimeInitializationFailed;
+    }
+
+    qWarning() << "Failed to initialize CEF, QCefView will run in unsupported mode:" << cefInitializationError_;
     return false;
   }
 
